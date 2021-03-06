@@ -26,3 +26,9 @@ void Scan(string item);
 int GetTotalPrice();
 }
 ```
+
+
+
+
+# Results:
+![Final Results of All Tests](https://user-images.githubusercontent.com/8701702/110223841-9d28ed80-7ece-11eb-827e-dcd543bf6c18.png)
