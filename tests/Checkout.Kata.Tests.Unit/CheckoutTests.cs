@@ -1,3 +1,4 @@
+using System;
 using Checkout.Kata.Domain.Models;
 using Checkout.Kata.Infrastructure.Services;
 using Xunit;
@@ -102,6 +103,7 @@ namespace Checkout.Kata.Tests.Unit
 
             Assert.Equal(expectedPrice, actualPrice);
         }
+
     }
 
 }
