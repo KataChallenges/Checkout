@@ -36,7 +36,7 @@ namespace Checkout.Kata.Infrastructure.Services
         {
             if (!String.IsNullOrEmpty(item))
             {
-                scannedProducts = item
+                scannedProducts = item.ToUpper()
                     .ToCharArray()
                     .Where(scannedSKU => _products.Any(product => product.SKU == scannedSKU))
                     .ToArray();
