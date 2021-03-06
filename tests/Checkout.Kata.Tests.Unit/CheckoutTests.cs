@@ -1,6 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Checkout.Kata.Domain.Models;
+using Checkout.Kata.Infrastructure.Services;
 using Xunit;
 
 namespace Checkout.Kata.Tests.Unit
@@ -11,7 +10,7 @@ namespace Checkout.Kata.Tests.Unit
 
         public CheckoutTests()
         {
-            IList<Product> SkuList = new[]
+            var SkuList = new[]
             {
                 new Product{SKU = 'A', Price = 50},
                 new Product{SKU = 'B', Price = 30},
@@ -19,7 +18,7 @@ namespace Checkout.Kata.Tests.Unit
                 new Product{SKU = 'D', Price = 15}
             };
 
-            IList<Discount> discounts = new[]
+            var discounts = new[]
             {
                 new Discount{SKU = 'A', Quantity = 3, Value = 20},
                 new Discount{SKU = 'B', Quantity = 2, Value = 15}
@@ -39,116 +38,69 @@ namespace Checkout.Kata.Tests.Unit
             Assert.Equal(expectedPrice, actualPrice);
         }
 
-        [Fact]
-        public void When_Single_Item_Scanned_Return_Correct_Price()
+        [Theory]
+        [InlineData("A", 50)]
+        [InlineData("B", 30)]
+        [InlineData("C", 20)]
+        [InlineData("D", 15)]
+        public void When_Single_Item_Scanned_Return_Correct_Price(string skuCode, int skuPrice)
         {
-            var expectedPrice = 50;
-            _checkoutSystem.Scan("A");
+            var expectedPrice = skuPrice;
+            _checkoutSystem.Scan(skuCode);
             var actualPrice = _checkoutSystem.GetTotalPrice();
             Assert.Equal(expectedPrice, actualPrice);
         }
 
-        [Fact]
-        public void When_Items_Without_Discount_Scanned_Return_Correct_Price()
+        [Theory]
+        [InlineData("AA", 100)]
+        [InlineData("AB", 80)]
+        [InlineData("AC", 70)]
+        [InlineData("AD", 65)]
+        [InlineData("ABC", 100)]
+        [InlineData("ABCD", 115)]
+        [InlineData("ABCCDD", 150)]
+        [InlineData("CDBA", 115)]
+        public void When_Items_Without_Discount_Scanned_Return_Correct_Price(string skuCode, int skuPrice)
         {
-            var expectedPrice = 80;
-            _checkoutSystem.Scan("AB");
-            var actualPrice = _checkoutSystem.GetTotalPrice();
-
-            Assert.Equal(expectedPrice, actualPrice);
-        }
-
-
-        [Fact]
-        public void When_Items_With_Discount_Scanned_Returns_Discounted_Price()
-        {
-            var expectedPrice = 130;
-            _checkoutSystem.Scan("AAA");
-            var actualPrice = _checkoutSystem.GetTotalPrice();
-
-            Assert.Equal(expectedPrice, actualPrice);
-        }
-
-        [Fact]
-        public void When_Invalid_Items_Scanned_Filter_Them()
-        {
-            var expectedPrice = 0;
-            _checkoutSystem.Scan("Z");
-            _checkoutSystem.Scan("E");
-            _checkoutSystem.Scan("E");
+            var expectedPrice = skuPrice;
+            _checkoutSystem.Scan(skuCode);
             var actualPrice = _checkoutSystem.GetTotalPrice();
 
             Assert.Equal(expectedPrice, actualPrice);
         }
 
-    }
 
-    internal interface ICheckOutSystem
-    {
-        int GetTotalPrice();
-        void Scan(string s);
-    }
-
-    public class Discount
-    {
-        public char SKU { get; set; }
-        public int Quantity { get; set; }
-        public int Value { get; set; }
-    }
-
-    public class Product
-    {
-        public char SKU { get; set; }
-        public int Price { get; set; }
-    }
-
-    public class CheckoutSystem : ICheckOutSystem
-    {
-        private readonly IList<Product> _products;
-        private readonly IList<Discount> _discounts;
-
-        private char[] scannedProducts;
-        public char[] ScannedProducts { get { return scannedProducts; } }
-
-        public CheckoutSystem(IList<Product> products, IList<Discount> discounts)
+        [Theory]
+        [InlineData("AAA", 130)]
+        [InlineData("AAAB", 160)]
+        [InlineData("AAABB", 175)]
+        [InlineData("AAAAAA", 260)]
+        [InlineData("BB", 45)]
+        [InlineData("ABB", 95)]
+        [InlineData("BBBB", 90)]
+        [InlineData("BBBBACD", 175)]
+        [InlineData("AAABBAAA", 305)]
+        public void When_Items_With_Discount_Scanned_Returns_Discounted_Price(string skuCode, int skuPrice)
         {
-            _products = products;
-            _discounts = discounts;
-            scannedProducts = new char[] { };
+            var expectedPrice = skuPrice;
+            _checkoutSystem.Scan(skuCode);
+            var actualPrice = _checkoutSystem.GetTotalPrice();
+
+            Assert.Equal(expectedPrice, actualPrice);
         }
 
-        public int GetTotalPrice()
+
+        [Theory]
+        [InlineData("EEGHKYLP", 0)]
+        [InlineData("ABCDE", 115)]
+        [InlineData("AAAAZ", 180)]
+        public void When_Invalid_Items_Scanned_Filter_Them(string skuCode, int skuPrice)
         {
-            int total = 0;
-            int totalDiscount = 0;
-            foreach (var scan in scannedProducts)
-            {
-                total += _products.Single(s => s.SKU == scan).Price;
-            }
+            var expectedPrice = skuPrice;
+            _checkoutSystem.Scan(skuCode);
+            var actualPrice = _checkoutSystem.GetTotalPrice();
 
-            foreach (var discount in _discounts)
-            {
-                int itemCount = scannedProducts.Count(item => item == discount.SKU);
-                var singleDiscount = (itemCount / discount.Quantity) * discount.Value;
-                totalDiscount += singleDiscount;
-            }
-
-            return total - totalDiscount;
-        }
-
-        public void Scan(string item)
-        {
-            if (!String.IsNullOrEmpty(item))
-            {
-                scannedProducts = item
-                    .ToCharArray()
-                    .Where(scannedSKU => _products.Any(product => product.SKU == scannedSKU))
-                    .ToArray();
-            }
-            else
-            {
-                scannedProducts = new char[] { };
-            }
+            Assert.Equal(expectedPrice, actualPrice);
         }
     }
 
