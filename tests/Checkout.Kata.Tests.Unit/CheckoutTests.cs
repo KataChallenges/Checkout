@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace Checkout.Kata.Tests.Unit
@@ -10,7 +11,7 @@ namespace Checkout.Kata.Tests.Unit
 
         public CheckoutTests()
         {
-            IList<Product> itemsList = new[]
+            IList<Product> SkuList = new[]
             {
                 new Product{SKU = 'A', Price = 50},
                 new Product{SKU = 'B', Price = 30},
@@ -24,7 +25,7 @@ namespace Checkout.Kata.Tests.Unit
                 new Discount{SKU = 'B', Quantity = 2, Value = 15}
             };
 
-            _checkoutSystem = new CheckoutSystem(itemsList, discounts);
+            _checkoutSystem = new CheckoutSystem(SkuList, discounts);
         }
 
 
@@ -50,9 +51,8 @@ namespace Checkout.Kata.Tests.Unit
         [Fact]
         public void When_Items_Without_Discount_Scanned_Return_Correct_Price()
         {
-            var expectedPrice = 100;
-            _checkoutSystem.Scan("A");
-            _checkoutSystem.Scan("B");
+            var expectedPrice = 80;
+            _checkoutSystem.Scan("AB");
             var actualPrice = _checkoutSystem.GetTotalPrice();
 
             Assert.Equal(expectedPrice, actualPrice);
@@ -63,19 +63,16 @@ namespace Checkout.Kata.Tests.Unit
         public void When_Items_With_Discount_Scanned_Returns_Discounted_Price()
         {
             var expectedPrice = 130;
-            _checkoutSystem.Scan("A");
-            _checkoutSystem.Scan("A");
-            _checkoutSystem.Scan("A");
+            _checkoutSystem.Scan("AAA");
             var actualPrice = _checkoutSystem.GetTotalPrice();
 
             Assert.Equal(expectedPrice, actualPrice);
         }
 
-
         [Fact]
         public void When_Invalid_Items_Scanned_Filter_Them()
         {
-            var expectedPrice = 130;
+            var expectedPrice = 0;
             _checkoutSystem.Scan("Z");
             _checkoutSystem.Scan("E");
             _checkoutSystem.Scan("E");
@@ -83,6 +80,7 @@ namespace Checkout.Kata.Tests.Unit
 
             Assert.Equal(expectedPrice, actualPrice);
         }
+
     }
 
     internal interface ICheckOutSystem
@@ -91,34 +89,66 @@ namespace Checkout.Kata.Tests.Unit
         void Scan(string s);
     }
 
-    internal class Discount
+    public class Discount
     {
         public char SKU { get; set; }
         public int Quantity { get; set; }
         public int Value { get; set; }
     }
 
-    internal class Product
+    public class Product
     {
         public char SKU { get; set; }
         public int Price { get; set; }
     }
 
-    internal class CheckoutSystem : ICheckOutSystem
+    public class CheckoutSystem : ICheckOutSystem
     {
-        public CheckoutSystem(IEnumerable<Product> itemsList, IEnumerable<Discount> discounts)
+        private readonly IList<Product> _products;
+        private readonly IList<Discount> _discounts;
+
+        private char[] scannedProducts;
+        public char[] ScannedProducts { get { return scannedProducts; } }
+
+        public CheckoutSystem(IList<Product> products, IList<Discount> discounts)
         {
-            throw new NotImplementedException();
+            _products = products;
+            _discounts = discounts;
+            scannedProducts = new char[] { };
         }
 
         public int GetTotalPrice()
         {
-            throw new NotImplementedException();
+            int total = 0;
+            int totalDiscount = 0;
+            foreach (var scan in scannedProducts)
+            {
+                total += _products.Single(s => s.SKU == scan).Price;
+            }
+
+            foreach (var discount in _discounts)
+            {
+                int itemCount = scannedProducts.Count(item => item == discount.SKU);
+                var singleDiscount = (itemCount / discount.Quantity) * discount.Value;
+                totalDiscount += singleDiscount;
+            }
+
+            return total - totalDiscount;
         }
 
         public void Scan(string item)
         {
-            throw new NotImplementedException();
+            if (!String.IsNullOrEmpty(item))
+            {
+                scannedProducts = item
+                    .ToCharArray()
+                    .Where(scannedSKU => _products.Any(product => product.SKU == scannedSKU))
+                    .ToArray();
+            }
+            else
+            {
+                scannedProducts = new char[] { };
+            }
         }
     }
 
