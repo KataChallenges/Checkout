@@ -13,4 +13,9 @@
     <PackageReference Include="coverlet.collector" Version="1.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Checkout.Kata.Domain\Checkout.Kata.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Checkout.Kata.Infrastructure\Checkout.Kata.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
